@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contract Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    /* Vibrant Color Palette */
+    --bg-main: #f0f4f8;
+    --surface: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    
+    --primary: #4f46e5;      /* Indigo */
+    --primary-hover: #4338ca;
+    --primary-light: #e0e7ff;
+    
+    --accent: #8b5cf6;       /* Violet */
+    --accent-light: #ede9fe;
+    
+    --success: #10b981;
+    --danger: #ef4444;
+    
+    --border: #e2e8f0;
+    --radius: 16px;
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    margin: 0;
+    background: var(--bg-main);
+    background-image: radial-gradient(circle at top right, #e0e7ff 0%, transparent 40%),
+                      radial-gradient(circle at bottom left, #f3e8ff 0%, transparent 40%);
+    color: var(--text-main);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  /* Main Contained App Container */
+  .app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 32px;
+    align-items: start;
+  }
+
+  @media (max-width: 950px) {
+    .app-container { grid-template-columns: 1fr; }
+    .preview-panel { position: static !important; }
+  }
+
+  /* Colorful Header */
+  .header {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-radius: var(--radius);
+    padding: 32px 40px;
+    color: white;
+    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px; }
+  .header p { margin: 0; font-size: 15px; opacity: 0.9; }
+
+  /* Form Sections */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Colorful top border for sections */
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  }
+  .card:nth-child(1)::before { background: #3b82f6; } /* Blue */
+  .card:nth-child(2)::before { background: #ec4899; } /* Pink */
+  .card:nth-child(3)::before { background: #10b981; } /* Green */
+
+  .section-title {
+    font-size: 18px; font-weight: 700; margin: 0 0 24px; color: var(--text-main);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title span {
+    background: var(--bg-main); color: var(--primary);
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+  }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .row:last-child { margin-bottom: 0; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text-main); }
+
+  /* Inputs */
+  input[type=text], input[type=date], input[type=number], select {
+    width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: 10px;
+    font-size: 14px; font-family: inherit; background: #f8fafc; color: var(--text-main);
+    transition: all 0.2s;
+  }
+  input:focus, select:focus {
+    outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px var(--primary-light);
+  }
+
+  /* Colorful Toggle Group */
+  .toggle-group { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; border: 2px solid var(--border); }
+  .toggle-group label {
+    flex: 1; text-align: center; cursor: pointer; padding: 10px; font-size: 14px; font-weight: 600; color: var(--text-muted);
+    border-radius: 8px; transition: all 0.2s; margin: 0;
+  }
+  .toggle-group input { display: none; }
+  .toggle-group input:checked + label { 
+    background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  }
+
+  /* Deliverables block */
+  .deliverable {
+    border: 2px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;
+    position: relative; background: white; transition: border-color 0.2s;
+  }
+  .deliverable:hover { border-color: #cbd5e1; }
+  
+  .btn-remove {
+    position: absolute; top: 16px; right: 16px; background: #fee2e2; border: 0; color: var(--danger);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-remove:hover { background: #fca5a5; color: #991b1b; transform: scale(1.05); }
+
+  /* Colorful Platform Pills */
+  .platform-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .platform-pill { cursor: pointer; margin: 0; }
+  .platform-pill input { display: none; }
+  .platform-pill span {
+    display: inline-block; padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600;
+    background: #f1f5f9; border: 2px solid transparent; color: var(--text-muted); transition: all 0.2s;
+  }
+  .platform-pill:hover span { background: #e2e8f0; }
+  .platform-pill input:checked + span {
+    background: var(--accent-light); border-color: var(--accent); color: var(--accent);
+  }
+
+  /* Buttons */
+  button { font-family: inherit; cursor: pointer; transition: all 0.2s; border: none; }
+  
+  .btn-primary {
+    width: 100%; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+    color: white; border-radius: 12px; padding: 16px;
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    margin-top: 10px;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 20px -3px rgba(79, 70, 229, 0.4); }
+  .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+  
+  .btn-outline {
+    background: white; border: 2px dashed #cbd5e1; color: var(--primary);
+    width: 100%; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-outline:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary-hover); }
+
+  /* Preview Panel */
+  .preview-panel {
+    position: sticky; top: 40px; background: white; border-radius: var(--radius);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); overflow: hidden;
+    display: flex; flex-direction: column; border: 1px solid var(--border);
+  }
+  .preview-header {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9); padding: 18px 24px; border-bottom: 1px solid var(--border);
+    font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 10px;
+  }
+  .preview-content {
+    padding: 24px; font-size: 16px; line-height: 2; direction: rtl; text-align: right;
+    color: var(--text-main); min-height: 250px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #fafbfc;
+  }
+  .preview-content strong { color: var(--primary); display: block; margin-bottom: 10px; }
+  
+  .error-msg {
+    background: #fef2f2; color: #991b1b; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    margin-top: 16px; border: 1px solid #fecaca; display: none;
+  }
+  .error-msg.show { display: block; }
+
+</style>
+<!-- Load libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.7/pizzip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.50.0/docxtemplater.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+  
+  <div class="header">
+    <div>
+      <h1>Influence Contract Generator  </h1>
+      <p>Generate professional Arabic DOCX agreements instantly.</p>
+    </div>
+    <div style="font-size: 40px; opacity: 0.8;">📄</div>
+  </div>
+
+  <!-- FORM COLUMN -->
+  <div class="form-panel">
+    <form id="form">
+      
+      <!-- Section 1 -->
+      <div class="card">
+        <h2 class="section-title"><span>1</span> Client Information</h2>
+        <div class="row">
+          <div class="field">
+            <label for="date">Contract Date</label>
+            <input id="date" name="date" type="date" required />
+          </div>
+          <div class="field">
+            <label>Client Gender</label>
+            <div class="toggle-group">
+              <input type="radio" id="male" name="gender" value="male" checked />
+              <label for="male">Male (السيد)</label>
+              
+              <input type="radio" id="female" name="gender" value="female" />
+              <label for="female">Female (السيدة)</label>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="name">Client Full Name(In Arabic)</label>
+          <input id="name" name="name" type="text" placeholder="e.g. Khaled Zoz" required />
+        </div>
+      </div>
+
+      <!-- Section 2 -->
+      <div class="card">
+        <h2 class="section-title"><span>2</span> Deliverables</h2>
+        <div id="deliverables"></div>
+        <button type="button" class="btn-outline" id="addDeliverable">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add Another Deliverable
+        </button>
+      </div>
+
+      <!-- Section 3 -->
+      <div class="card">
+        <h2 class="section-title"><span>3</span> Financials</h2>
+        <div class="field">
+          <label for="amount">Total Amount (EGP)</label>
+          <input id="amount" name="amount" type="number" min="1000" step="1" placeholder="e.g. 28180" required />
+          <small style="color: var(--text-muted); font-size: 13px; font-weight: 500; margin-top: 4px; display: block;">
+            Minimum 1000 EGP. Arabic numerals & wording generated automatically.
+          </small>
+        </div>
+        
+        <div style="margin-top: 28px;">
+          <button type="submit" class="primary btn-primary" id="submitBtn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download Contract
+          </button>
+        </div>
+        <div class="error-msg" id="error"></div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- PREVIEW COLUMN -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      Live Scope Preview
+    </div>
+    <div class="preview-content" id="preview">
+      Fill out the form to preview the scope clause here.
+    </div>
+  </div>
+
+</div>
+
+<!-- Template for Deliverables -->
+<template id="deliverableTpl">
+  <div class="deliverable">
+    <button type="button" class="btn-remove" title="Remove">✕</button>
+    
+    <div class="row">
+      <div class="field">
+        <label>Content Type</label>
+        <select class="ctype">
+          <option value="story">Story</option>
+          <option value="reel">Reel</option>
+          <option value="post">Post</option>
+          <option value="video">Video</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Quantity (1-10)</label>
+        <input class="qty" type="number" min="1" max="10" step="1" value="1" />
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px; color: var(--text-main);">Publish to</label>
+      <div class="platform-grid">
+        <label class="platform-pill"><input type="checkbox" class="pf" value="إنستجرام" checked /><span>Instagram</span></label>
+        <label class="platform-pill"><input type="checkbox" class="pf" value="فيسبوك" /><span>Facebook</span></label>
+        <label class="platform-pill"><input type="checkbox" class="pf" value="تيك توك" /><span>TikTok</span></label>
+        <label class="platform-pill"><input type="checkbox" class="pf" value="يوتيوب" /><span>YouTube</span></label>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px; color: var(--text-main);">Mirror to (Optional)</label>
+      <div class="platform-grid">
+        <label class="platform-pill"><input type="checkbox" class="mf" value="إنستجرام" /><span>Instagram</span></label>
+        <label class="platform-pill"><input type="checkbox" class="mf" value="فيسبوك" /><span>Facebook</span></label>
+        <label class="platform-pill"><input type="checkbox" class="mf" value="تيك توك" /><span>TikTok</span></label>
+        <label class="platform-pill"><input type="checkbox" class="mf" value="يوتيوب" /><span>YouTube</span></label>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 8px;">
+      <input type="checkbox" class="boost" id="boost-0" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;" />
+      <label for="boost-0" style="font-size: 14px; font-weight: 600; margin: 0; cursor: pointer; color: var(--text-main);">Include Boosting Code</label>
+    </div>
+  </div>
+</template>
+
+<script>
+// ==========================================
+// 1. ARABIC NUMBER LOGIC
+// ==========================================
+const ONES = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+const TEENS = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+const TENS = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+const HUNDREDS = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+const ARABIC_INDIC_MAP = { '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩' };
+
+function joinAr(parts) { return parts.filter(Boolean).join(' و'); }
+
+function below1000(n) {
+  const parts = [];
+  const h = Math.floor(n / 100);
+  const r = n % 100;
+  if (h) parts.push(HUNDREDS[h]);
+  if (r) {
+    if (r < 10) parts.push(ONES[r]);
+    else if (r < 20) parts.push(TEENS[r - 10]);
+    else {
+      const t = Math.floor(r / 10);
+      const o = r % 10;
+      if (o) parts.push(joinAr([ONES[o], TENS[t]]));
+      else parts.push(TENS[t]);
+    }
+  }
+  return joinAr(parts);
+}
+
+function numberToArabicWords(n) {
+  if (n === 0) return 'صفر';
+  const parts = [];
+  const millions = Math.floor(n / 1000000);
+  const thousands = Math.floor((n % 1000000) / 1000);
+  const rest = n % 1000;
+  if (millions) {
+    if (millions === 1) parts.push('مليون');
+    else if (millions === 2) parts.push('مليونان');
+    else if (millions <= 10) parts.push(below1000(millions) + ' ملايين');
+    else parts.push(below1000(millions) + ' مليون');
+  }
+  if (thousands) {
+    if (thousands === 1) parts.push('ألف');
+    else if (thousands === 2) parts.push('ألفان');
+    else if (thousands <= 10) parts.push(below1000(thousands) + ' آلاف');
+    else parts.push(below1000(thousands) + ' ألفًا');
+  }
+  if (rest) parts.push(below1000(rest));
+  return joinAr(parts);
+}
+
+function toArabicIndic(n) {
+  return Math.trunc(n).toString().replace(/[0-9]/g, (d) => ARABIC_INDIC_MAP[d]);
+}
+
+function amountPhrase(n) {
+  return {
+    numeric: toArabicIndic(n),
+    words: `${numberToArabicWords(n)} جنيهًا مصريًا`
+  };
+}
+
+// ==========================================
+// 2. DATE & SCOPE LOGIC
+// ==========================================
+const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+function dateParts(input) {
+  const d = new Date(input);
+  return {
+    dayName: WEEKDAYS[d.getDay()],
+    day: d.getDate(),
+    month: d.getMonth() + 1,
+    monthName: MONTHS[d.getMonth()],
+    year: d.getFullYear()
+  };
+}
+
+const CONTENT_TYPES = { story: 'ستوري', reel: 'ريل', post: 'بوست', video: 'فيديو' };
+const QTY_WORDS = ['', 'واحد', 'اثنين', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+
+function buildDeliverableLine(d) {
+  let line = `نشر عدد ${QTY_WORDS[d.quantity]} ${CONTENT_TYPES[d.type]} على (${d.platforms.join(' - ')})`;
+  if (d.mirrorTo && d.mirrorTo.length) line += ` مع إعادة نشره على ${d.mirrorTo.join(' و')}`;
+  if (d.boosting) line += ` بالإضافة إلى كود لتعزيز المحتوى`;
+  return line;
+}
+
+function buildScopeParagraph(deliverables, amountWords, amountNumeric) {
+  const body = deliverables.map(buildDeliverableLine).join(' - ');
+  return `${body}، وذلك مقابل مبلغ وقدره ${amountNumeric} جنيهًا مصريًا (${amountWords} فقط لا غير).`;
+}
+
+// ==========================================
+// 3. UI LOGIC
+// ==========================================
+const deliverablesEl = document.getElementById('deliverables');
+const tpl = document.getElementById('deliverableTpl');
+const previewEl = document.getElementById('preview');
+const errorEl = document.getElementById('error');
+const submitBtn = document.getElementById('submitBtn');
+
+function addDeliverable() {
+  const node = tpl.content.firstElementChild.cloneNode(true);
+  
+  const boostId = 'boost-' + Date.now() + Math.floor(Math.random() * 1000);
+  node.querySelector('.boost').id = boostId;
+  node.querySelector('label[for="boost-0"]').setAttribute('for', boostId);
+
+  node.querySelector('.btn-remove').addEventListener('click', () => { node.remove(); updatePreview(); });
+  node.querySelectorAll('input, select').forEach(el => el.addEventListener('change', updatePreview));
+  deliverablesEl.appendChild(node);
+  updatePreview();
+}
+
+function collectDeliverables() {
+  return [...deliverablesEl.querySelectorAll('.deliverable')].map(node => ({
+    type: node.querySelector('.ctype').value,
+    quantity: parseInt(node.querySelector('.qty').value, 10),
+    platforms: [...node.querySelectorAll('.pf:checked')].map(x => x.value),
+    mirrorTo: [...node.querySelectorAll('.mf:checked')].map(x => x.value),
+    boosting: node.querySelector('.boost').checked
+  }));
+}
+
+function updatePreview() {
+  const deliverables = collectDeliverables();
+  const amountVal = document.getElementById('amount').value;
+  
+  if (!deliverables.length) {
+    previewEl.innerHTML = 'Add at least one deliverable.';
+    return;
+  }
+  if (!amountVal) {
+    previewEl.innerHTML = 'Enter an amount to see the preview.';
+    return;
+  }
+
+  try {
+    const { numeric, words } = amountPhrase(Number(amountVal));
+    const scope = buildScopeParagraph(deliverables, words, numeric);
+    previewEl.innerHTML = "<strong>ثانياً: تصوير وإخراج</strong>" + scope;
+  } catch (e) {
+    previewEl.innerHTML = '— Fill in the form correctly to see the clause —';
+  }
+}
+
+document.getElementById('addDeliverable').addEventListener('click', addDeliverable);
+document.getElementById('amount').addEventListener('input', updatePreview);
+document.querySelectorAll('input[name="gender"]').forEach(el => el.addEventListener('change', updatePreview));
+
+// ==========================================
+// 4. DOCX GENERATION (Browser-based)
+// ==========================================
+document.getElementById('form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  setError('');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = 'Generating...';
+
+  try {
+    const formData = {
+      date: document.getElementById('date').value,
+      name: document.getElementById('name').value.trim(),
+      gender: document.querySelector('input[name="gender"]:checked').value,
+      amount: parseInt(document.getElementById('amount').value, 10),
+      deliverables: collectDeliverables()
+    };
+
+    if (!formData.name) throw new Error("Client Name is required");
+    if (formData.amount < 1000) throw new Error("Amount must be at least 1000 EGP");
+    if (!formData.deliverables.length) throw new Error("At least one deliverable is required");
+
+    const date = dateParts(formData.date);
+    const { numeric, words } = amountPhrase(formData.amount);
+    const scopeParagraph = buildScopeParagraph(formData.deliverables, words, numeric);
+    const honorific = formData.gender === 'female' ? 'السيدة' : 'السيد';
+    const position = formData.gender === 'female' ? 'صانعة محتوي' : 'صانع محتوي';
+
+    const data = {
+      date: date,
+      party2: { name: formData.name, honorific: honorific, position: position },
+      scopeParagraph: scopeParagraph
+    };
+
+    fetch('template.docx')
+      .then(res => {
+        if (!res.ok) throw new Error("Could not load template.docx. Make sure it is in the same folder.");
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        const zip = new PizZip(buffer);
+        const doc = new window.docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+          delimiters: { start: '[[', end: ']]' },
+          parser: tag => ({
+            get: scope => tag === '.'
+              ? scope
+              : tag.trim().split('.').reduce((o, k) => (o == null ? undefined : o[k]), scope)
+          })
+        });
+
+        doc.render(data);
+
+        const out = doc.getZip().generate({
+          type: 'blob',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+
+        saveAs(out, formData.name + '.docx');
+      })
+      .catch(err => setError(err.message))
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
+      });
+
+  } catch (err) {
+    setError(err.message);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
+  }
+});
+
+function setError(msg) {
+  errorEl.textContent = msg || '';
+  errorEl.classList.toggle('show', !!msg);
+}
+
+addDeliverable();
+</script>
+</body>
+</html>
