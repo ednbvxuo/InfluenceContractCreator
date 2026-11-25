@@ -180,10 +180,10 @@
   .error-msg.show { display: block; }
 
 </style>
-<!-- Load libraries using unpkg for better compatibility with GitHub Pages -->
-<script src="https://unpkg.com/pizzip@3.1.7/dist/pizzip.js"></script>
-<script src="https://unpkg.com/docxtemplater@3.50.0/build/docxtemplater.js"></script>
-<script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<!-- Load libraries using jsDelivr for maximum reliability -->
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.50.0/build/docxtemplater.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 </head>
 <body>
 
@@ -315,241 +315,249 @@
 </template>
 
 <script>
-// --- GLOBAL FIX FOR GITHUB PAGES CDN LOADING ---
-window.PizZip = window.PizZip || PizZip;
+// Wait for window to load to ensure PizZip and Docxtemplater are fully available
+window.addEventListener('load', () => {
+  if (typeof PizZip === 'undefined') {
+    alert("Critical Error: PizZip library failed to load. Please refresh the page or check your internet connection.");
+    return;
+  }
 
-// ==========================================
-// 1. ARABIC NUMBER LOGIC
-// ==========================================
-const ONES = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
-const TEENS = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
-const TENS = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
-const HUNDREDS = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
-const ARABIC_INDIC_MAP = { '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩' };
+  // ==========================================
+  // 1. ARABIC NUMBER LOGIC
+  // ==========================================
+  const ONES = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+  const TEENS = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+  const TENS = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+  const HUNDREDS = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+  const ARABIC_INDIC_MAP = { '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩' };
 
-function joinAr(parts) { return parts.filter(Boolean).join(' و'); }
+  function joinAr(parts) { return parts.filter(Boolean).join(' و'); }
 
-function below1000(n) {
-  const parts = [];
-  const h = Math.floor(n / 100);
-  const r = n % 100;
-  if (h) parts.push(HUNDREDS[h]);
-  if (r) {
-    if (r < 10) parts.push(ONES[r]);
-    else if (r < 20) parts.push(TEENS[r - 10]);
-    else {
-      const t = Math.floor(r / 10);
-      const o = r % 10;
-      if (o) parts.push(joinAr([ONES[o], TENS[t]]));
-      else parts.push(TENS[t]);
+  function below1000(n) {
+    const parts = [];
+    const h = Math.floor(n / 100);
+    const r = n % 100;
+    if (h) parts.push(HUNDREDS[h]);
+    if (r) {
+      if (r < 10) parts.push(ONES[r]);
+      else if (r < 20) parts.push(TEENS[r - 10]);
+      else {
+        const t = Math.floor(r / 10);
+        const o = r % 10;
+        if (o) parts.push(joinAr([ONES[o], TENS[t]]));
+        else parts.push(TENS[t]);
+      }
+    }
+    return joinAr(parts);
+  }
+
+  function numberToArabicWords(n) {
+    if (n === 0) return 'صفر';
+    const parts = [];
+    const millions = Math.floor(n / 1000000);
+    const thousands = Math.floor((n % 1000000) / 1000);
+    const rest = n % 1000;
+    if (millions) {
+      if (millions === 1) parts.push('مليون');
+      else if (millions === 2) parts.push('مليونان');
+      else if (millions <= 10) parts.push(below1000(millions) + ' ملايين');
+      else parts.push(below1000(millions) + ' مليون');
+    }
+    if (thousands) {
+      if (thousands === 1) parts.push('ألف');
+      else if (thousands === 2) parts.push('ألفان');
+      else if (thousands <= 10) parts.push(below1000(thousands) + ' آلاف');
+      else parts.push(below1000(thousands) + ' ألفًا');
+    }
+    if (rest) parts.push(below1000(rest));
+    return joinAr(parts);
+  }
+
+  function toArabicIndic(n) {
+    return Math.trunc(n).toString().replace(/[0-9]/g, (d) => ARABIC_INDIC_MAP[d]);
+  }
+
+  function amountPhrase(n) {
+    return {
+      numeric: toArabicIndic(n),
+      words: `${numberToArabicWords(n)} جنيهًا مصريًا`
+    };
+  }
+
+  // ==========================================
+  // 2. DATE & SCOPE LOGIC
+  // ==========================================
+  const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+  function dateParts(input) {
+    const d = new Date(input);
+    return {
+      dayName: WEEKDAYS[d.getDay()],
+      day: d.getDate(),
+      month: d.getMonth() + 1,
+      monthName: MONTHS[d.getMonth()],
+      year: d.getFullYear()
+    };
+  }
+
+  const CONTENT_TYPES = { story: 'ستوري', reel: 'ريل', post: 'بوست', video: 'فيديو' };
+  const QTY_WORDS = ['', 'واحد', 'اثنين', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+
+  function buildDeliverableLine(d) {
+    let line = `نشر عدد ${QTY_WORDS[d.quantity]} ${CONTENT_TYPES[d.type]} على (${d.platforms.join(' - ')})`;
+    if (d.mirrorTo && d.mirrorTo.length) line += ` مع إعادة نشره على ${d.mirrorTo.join(' و')}`;
+    if (d.boosting) line += ` بالإضافة إلى كود لتعزيز المحتوى`;
+    return line;
+  }
+
+  function buildScopeParagraph(deliverables, amountWords, amountNumeric) {
+    const body = deliverables.map(buildDeliverableLine).join(' - ');
+    return `${body}، وذلك مقابل مبلغ وقدره ${amountNumeric} جنيهًا مصريًا (${amountWords} فقط لا غير).`;
+  }
+
+  // ==========================================
+  // 3. UI LOGIC
+  // ==========================================
+  const deliverablesEl = document.getElementById('deliverables');
+  const tpl = document.getElementById('deliverableTpl');
+  const previewEl = document.getElementById('preview');
+  const errorEl = document.getElementById('error');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function addDeliverable() {
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    
+    const boostId = 'boost-' + Date.now() + Math.floor(Math.random() * 1000);
+    node.querySelector('.boost').id = boostId;
+    node.querySelector('label[for="boost-0"]').setAttribute('for', boostId);
+
+    node.querySelector('.btn-remove').addEventListener('click', () => { node.remove(); updatePreview(); });
+    node.querySelectorAll('input, select').forEach(el => el.addEventListener('change', updatePreview));
+    deliverablesEl.appendChild(node);
+    updatePreview();
+  }
+
+  function collectDeliverables() {
+    return [...deliverablesEl.querySelectorAll('.deliverable')].map(node => ({
+      type: node.querySelector('.ctype').value,
+      quantity: parseInt(node.querySelector('.qty').value, 10),
+      platforms: [...node.querySelectorAll('.pf:checked')].map(x => x.value),
+      mirrorTo: [...node.querySelectorAll('.mf:checked')].map(x => x.value),
+      boosting: node.querySelector('.boost').checked
+    }));
+  }
+
+  function updatePreview() {
+    const deliverables = collectDeliverables();
+    const amountVal = document.getElementById('amount').value;
+    
+    if (!deliverables.length) {
+      previewEl.innerHTML = 'Add at least one deliverable.';
+      return;
+    }
+    if (!amountVal) {
+      previewEl.innerHTML = 'Enter an amount to see the preview.';
+      return;
+    }
+
+    try {
+      const { numeric, words } = amountPhrase(Number(amountVal));
+      const scope = buildScopeParagraph(deliverables, words, numeric);
+      previewEl.innerHTML = "<strong>ثانياً: تصوير وإخراج</strong>" + scope;
+    } catch (e) {
+      previewEl.innerHTML = '— Fill in the form correctly to see the clause —';
     }
   }
-  return joinAr(parts);
-}
 
-function numberToArabicWords(n) {
-  if (n === 0) return 'صفر';
-  const parts = [];
-  const millions = Math.floor(n / 1000000);
-  const thousands = Math.floor((n % 1000000) / 1000);
-  const rest = n % 1000;
-  if (millions) {
-    if (millions === 1) parts.push('مليون');
-    else if (millions === 2) parts.push('مليونان');
-    else if (millions <= 10) parts.push(below1000(millions) + ' ملايين');
-    else parts.push(below1000(millions) + ' مليون');
-  }
-  if (thousands) {
-    if (thousands === 1) parts.push('ألف');
-    else if (thousands === 2) parts.push('ألفان');
-    else if (thousands <= 10) parts.push(below1000(thousands) + ' آلاف');
-    else parts.push(below1000(thousands) + ' ألفًا');
-  }
-  if (rest) parts.push(below1000(rest));
-  return joinAr(parts);
-}
+  document.getElementById('addDeliverable').addEventListener('click', addDeliverable);
+  document.getElementById('amount').addEventListener('input', updatePreview);
+  document.querySelectorAll('input[name="gender"]').forEach(el => el.addEventListener('change', updatePreview));
 
-function toArabicIndic(n) {
-  return Math.trunc(n).toString().replace(/[0-9]/g, (d) => ARABIC_INDIC_MAP[d]);
-}
+  // ==========================================
+  // 4. DOCX GENERATION (Browser-based)
+  // ==========================================
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    setError('');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Generating...';
 
-function amountPhrase(n) {
-  return {
-    numeric: toArabicIndic(n),
-    words: `${numberToArabicWords(n)} جنيهًا مصريًا`
-  };
-}
+    try {
+      const formData = {
+        date: document.getElementById('date').value,
+        name: document.getElementById('name').value.trim(),
+        gender: document.querySelector('input[name="gender"]:checked').value,
+        amount: parseInt(document.getElementById('amount').value, 10),
+        deliverables: collectDeliverables()
+      };
 
-// ==========================================
-// 2. DATE & SCOPE LOGIC
-// ==========================================
-const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      if (!formData.name) throw new Error("Client Name is required");
+      if (formData.amount < 1000) throw new Error("Amount must be at least 1000 EGP");
+      if (!formData.deliverables.length) throw new Error("At least one deliverable is required");
 
-function dateParts(input) {
-  const d = new Date(input);
-  return {
-    dayName: WEEKDAYS[d.getDay()],
-    day: d.getDate(),
-    month: d.getMonth() + 1,
-    monthName: MONTHS[d.getMonth()],
-    year: d.getFullYear()
-  };
-}
+      const date = dateParts(formData.date);
+      const { numeric, words } = amountPhrase(formData.amount);
+      const scopeParagraph = buildScopeParagraph(formData.deliverables, words, numeric);
+      const honorific = formData.gender === 'female' ? 'السيدة' : 'السيد';
+      const position = formData.gender === 'female' ? 'صانعة محتوي' : 'صانع محتوي';
 
-const CONTENT_TYPES = { story: 'ستوري', reel: 'ريل', post: 'بوست', video: 'فيديو' };
-const QTY_WORDS = ['', 'واحد', 'اثنين', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+      const data = {
+        date: date,
+        party2: { name: formData.name, honorific: honorific, position: position },
+        scopeParagraph: scopeParagraph
+      };
 
-function buildDeliverableLine(d) {
-  let line = `نشر عدد ${QTY_WORDS[d.quantity]} ${CONTENT_TYPES[d.type]} على (${d.platforms.join(' - ')})`;
-  if (d.mirrorTo && d.mirrorTo.length) line += ` مع إعادة نشره على ${d.mirrorTo.join(' و')}`;
-  if (d.boosting) line += ` بالإضافة إلى كود لتعزيز المحتوى`;
-  return line;
-}
+      fetch('template.docx')
+        .then(res => {
+          if (!res.ok) throw new Error("Could not load template.docx. Make sure it is in the same folder.");
+          return res.arrayBuffer();
+        })
+        .then(buffer => {
+          // Global reference ensures it works
+          const zip = new window.PizZip(buffer);
+          
+          const doc = new window.docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+            delimiters: { start: '[[', end: ']]' },
+            nullGetter: () => '',
+            parser: tag => ({
+              get: scope => tag === '.'
+                ? scope
+                : tag.trim().split('.').reduce((o, k) => (o == null ? undefined : o[k]), scope)
+            })
+          });
 
-function buildScopeParagraph(deliverables, amountWords, amountNumeric) {
-  const body = deliverables.map(buildDeliverableLine).join(' - ');
-  return `${body}، وذلك مقابل مبلغ وقدره ${amountNumeric} جنيهًا مصريًا (${amountWords} فقط لا غير).`;
-}
+          doc.render(data);
 
-// ==========================================
-// 3. UI LOGIC
-// ==========================================
-const deliverablesEl = document.getElementById('deliverables');
-const tpl = document.getElementById('deliverableTpl');
-const previewEl = document.getElementById('preview');
-const errorEl = document.getElementById('error');
-const submitBtn = document.getElementById('submitBtn');
+          const out = doc.getZip().generate({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          });
 
-function addDeliverable() {
-  const node = tpl.content.firstElementChild.cloneNode(true);
-  
-  const boostId = 'boost-' + Date.now() + Math.floor(Math.random() * 1000);
-  node.querySelector('.boost').id = boostId;
-  node.querySelector('label[for="boost-0"]').setAttribute('for', boostId);
-
-  node.querySelector('.btn-remove').addEventListener('click', () => { node.remove(); updatePreview(); });
-  node.querySelectorAll('input, select').forEach(el => el.addEventListener('change', updatePreview));
-  deliverablesEl.appendChild(node);
-  updatePreview();
-}
-
-function collectDeliverables() {
-  return [...deliverablesEl.querySelectorAll('.deliverable')].map(node => ({
-    type: node.querySelector('.ctype').value,
-    quantity: parseInt(node.querySelector('.qty').value, 10),
-    platforms: [...node.querySelectorAll('.pf:checked')].map(x => x.value),
-    mirrorTo: [...node.querySelectorAll('.mf:checked')].map(x => x.value),
-    boosting: node.querySelector('.boost').checked
-  }));
-}
-
-function updatePreview() {
-  const deliverables = collectDeliverables();
-  const amountVal = document.getElementById('amount').value;
-  
-  if (!deliverables.length) {
-    previewEl.innerHTML = 'Add at least one deliverable.';
-    return;
-  }
-  if (!amountVal) {
-    previewEl.innerHTML = 'Enter an amount to see the preview.';
-    return;
-  }
-
-  try {
-    const { numeric, words } = amountPhrase(Number(amountVal));
-    const scope = buildScopeParagraph(deliverables, words, numeric);
-    previewEl.innerHTML = "<strong>ثانياً: تصوير وإخراج</strong>" + scope;
-  } catch (e) {
-    previewEl.innerHTML = '— Fill in the form correctly to see the clause —';
-  }
-}
-
-document.getElementById('addDeliverable').addEventListener('click', addDeliverable);
-document.getElementById('amount').addEventListener('input', updatePreview);
-document.querySelectorAll('input[name="gender"]').forEach(el => el.addEventListener('change', updatePreview));
-
-// ==========================================
-// 4. DOCX GENERATION (Browser-based)
-// ==========================================
-document.getElementById('form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  setError('');
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = 'Generating...';
-
-  try {
-    const formData = {
-      date: document.getElementById('date').value,
-      name: document.getElementById('name').value.trim(),
-      gender: document.querySelector('input[name="gender"]:checked').value,
-      amount: parseInt(document.getElementById('amount').value, 10),
-      deliverables: collectDeliverables()
-    };
-
-    if (!formData.name) throw new Error("Client Name is required");
-    if (formData.amount < 1000) throw new Error("Amount must be at least 1000 EGP");
-    if (!formData.deliverables.length) throw new Error("At least one deliverable is required");
-
-    const date = dateParts(formData.date);
-    const { numeric, words } = amountPhrase(formData.amount);
-    const scopeParagraph = buildScopeParagraph(formData.deliverables, words, numeric);
-    const honorific = formData.gender === 'female' ? 'السيدة' : 'السيد';
-    const position = formData.gender === 'female' ? 'صانعة محتوي' : 'صانع محتوي';
-
-    const data = {
-      date: date,
-      party2: { name: formData.name, honorific: honorific, position: position },
-      scopeParagraph: scopeParagraph
-    };
-
-    fetch('template.docx')
-      .then(res => {
-        if (!res.ok) throw new Error("Could not load template.docx. Make sure it is in the same folder.");
-        return res.arrayBuffer();
-      })
-      .then(buffer => {
-        const zip = new window.PizZip(buffer);
-        const doc = new window.docxtemplater(zip, {
-          paragraphLoop: true,
-          linebreaks: true,
-          delimiters: { start: '[[', end: ']]' },
-          parser: tag => ({
-            get: scope => tag === '.'
-              ? scope
-              : tag.trim().split('.').reduce((o, k) => (o == null ? undefined : o[k]), scope)
-          })
+          saveAs(out, formData.name + '.docx');
+        })
+        .catch(err => setError(err.message))
+        .finally(() => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
         });
 
-        doc.render(data);
+    } catch (err) {
+      setError(err.message);
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
+    }
+  });
 
-        const out = doc.getZip().generate({
-          type: 'blob',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        });
-
-        saveAs(out, formData.name + '.docx');
-      })
-      .catch(err => setError(err.message))
-      .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
-      });
-
-  } catch (err) {
-    setError(err.message);
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Contract';
+  function setError(msg) {
+    errorEl.textContent = msg || '';
+    errorEl.classList.toggle('show', !!msg);
   }
+
+  addDeliverable();
 });
-
-function setError(msg) {
-  errorEl.textContent = msg || '';
-  errorEl.classList.toggle('show', !!msg);
-}
-
-addDeliverable();
 </script>
 </body>
 </html>
